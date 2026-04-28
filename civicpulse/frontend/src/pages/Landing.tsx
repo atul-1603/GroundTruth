@@ -1,9 +1,9 @@
 import React from 'react'
-import { Card } from '../ui/Card'
-import { Badge } from '../ui/Badge'
-import { Button } from '../ui/Button'
+import { Card } from '../components/ui/Card'
+import { Badge } from '../components/ui/Badge'
+import { Button } from '../components/ui/Button'
 import { Link } from 'react-router-dom'
-import { Shield, Activity, Users, FileText, Map as MapIcon, Globe, Heart } from 'lucide-react'
+import { Activity, Users, FileText } from 'lucide-react'
 import { LandingNavbar } from '../components/layout/LandingNavbar'
 
 export default function Landing() {
