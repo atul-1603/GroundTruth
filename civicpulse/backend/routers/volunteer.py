@@ -17,7 +17,9 @@ async def get_volunteer(user_id: str, user=Depends(verify_firebase_token)):
 
 @router.put("/{user_id}")
 async def update_volunteer(user_id: str, data: dict, user=Depends(verify_firebase_token)):
-    pass
+    await firestore.update_volunteer(user_id, data)
+    return {"message": "Updated"}
+
 
 @router.get("/{user_id}/tasks")
 async def get_volunteer_tasks(user_id: str, user=Depends(verify_firebase_token)):

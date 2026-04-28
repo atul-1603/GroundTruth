@@ -9,20 +9,29 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          900: '#312e81',
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          500: '#0ea5e9', // Sky blue
+          600: '#0284c7',
+          700: '#0369a1',
+          900: '#0c4a6e',
         },
-        dark: {
-          bg: '#0f172a',
-          card: '#1e293b',
-          border: '#334155'
+        slate: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          800: '#1e293b',
+          900: '#0f172a',
+        },
+        ngo: {
+          warm: '#fffbeb',
+          accent: '#f59e0b', // Amber
+          success: '#10b981', // Emerald
         }
       }
     },
+
   },
   plugins: [],
 } satisfies Config

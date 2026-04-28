@@ -1,16 +1,21 @@
-import { firebase_config } from './firebase_config'
+
 from firebase_admin import firestore
 from datetime import datetime, timezone
 
 db = firestore.client()
 
 # NGO operations
-async def create_ngo(data: dict) -> str:
-    ngo_ref = db.collection('ngos').document()
+async def create_ngo(data: dict, ngo_id: str = None) -> str:
+    if ngo_id:
+        ngo_ref = db.collection('ngos').document(ngo_id)
+    else:
+        ngo_ref = db.collection('ngos').document()
+    
     data['id'] = ngo_ref.id
     data['createdAt'] = datetime.now(timezone.utc)
     ngo_ref.set(data)
     return ngo_ref.id
+
 
 async def get_ngo(ngo_id: str) -> dict:
     doc = db.collection('ngos').document(ngo_id).get()
@@ -41,8 +46,16 @@ async def get_volunteers_by_ngo(ngo_id: str) -> list[dict]:
     docs = db.collection('users').where('ngoId', '==', ngo_id).stream()
     return [doc.to_dict() for doc in docs]
 
+async def update_volunteer(user_id: str, data: dict) -> None:
+    db.collection('users').document(user_id).update(data)
+
 async def update_volunteer_fatigue(user_id: str, score: float) -> None:
+
     db.collection('users').document(user_id).update({'fatigueScore': score})
+
+async def delete_volunteer(user_id: str) -> None:
+    db.collection('users').document(user_id).delete()
+
 
 # Activity operations
 async def create_activity(data: dict) -> str:
@@ -67,6 +80,9 @@ async def update_activity_status(activity_id: str, status: str) -> None:
         update_data['resolvedAt'] = datetime.now(timezone.utc)
     db.collection('activities').document(activity_id).update(update_data)
 
+async def update_activity_details(activity_id: str, data: dict) -> None:
+    db.collection('activities').document(activity_id).update(data)
+
 async def assign_volunteer_to_activity(activity_id: str, user_id: str) -> None:
     act_ref = db.collection('activities').document(activity_id)
     act_ref.update({'volunteersAssigned': firestore.ArrayUnion([user_id])})
@@ -89,6 +105,43 @@ async def get_reports_by_activity(activity_id: str) -> list[dict]:
 async def get_reports_by_ngo(ngo_id: str) -> list[dict]:
     docs = db.collection('reports').where('ngoId', '==', ngo_id).stream()
     return [doc.to_dict() for doc in docs]
+
+async def get_reports_by_user(user_id: str) -> list[dict]:
+    docs = db.collection('reports').where('userId', '==', user_id).stream()
+    return [doc.to_dict() for doc in docs]
+
+# Assignment operations
+async def create_assignment(activity_id: str, user_id: str) -> str:
+    # Check if already assigned
+    existing = db.collection('assignments').where('activityId', '==', activity_id).where('userId', '==', user_id).stream()
+    for doc in existing:
+        return doc.id
+    
+    ass_ref = db.collection('assignments').document()
+    data = {
+        'id': ass_ref.id,
+        'activityId': activity_id,
+        'userId': user_id,
+        'status': 'pending',
+        'assignedAt': datetime.now(timezone.utc)
+    }
+    ass_ref.set(data)
+    return ass_ref.id
+
+async def get_assignments_by_volunteer(user_id: str) -> list[dict]:
+    docs = db.collection('assignments').where('userId', '==', user_id).stream()
+    results = []
+    for doc in docs:
+        ass = doc.to_dict()
+        # Join with activity details
+        act = await get_activity(ass['activityId'])
+        if act:
+            results.append({**act, **ass}) # Merge activity data into assignment
+    return results
+
+async def update_assignment_status(assignment_id: str, status: str) -> None:
+    db.collection('assignments').document(assignment_id).update({'status': status})
+
 
 # Dashboard operations
 async def get_dashboard_stats(ngo_id: str) -> dict:

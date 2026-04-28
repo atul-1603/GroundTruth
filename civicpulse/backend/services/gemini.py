@@ -37,16 +37,32 @@ Rules:
 """
 
     async def process_text_report(self, text: str, activity_type: str, language: str) -> dict:
-        """
-        1. Send to Gemini 1.5 Pro with structured extraction prompt
-        2. Return structured JSON matching report extractedData schema
-        """
-        prompt = self._build_extraction_prompt(activity_type) + f"\n\nReport content:\n{text}"
-        response = self.model.generate_content(prompt)
-        text_resp = response.text
-        if text_resp.startswith("```json"):
-            text_resp = text_resp[7:-3]
-        return json.loads(text_resp.strip())
+        try:
+            prompt = self._build_extraction_prompt(activity_type) + f"\n\nReport content:\n{text}"
+            response = self.model.generate_content(prompt)
+            text_resp = response.text
+            
+            # Remove markdown code blocks if present
+            if "```json" in text_resp:
+                text_resp = text_resp.split("```json")[1].split("```")[0]
+            elif "```" in text_resp:
+                text_resp = text_resp.split("```")[1].split("```")[0]
+                
+            return json.loads(text_resp.strip())
+        except Exception as e:
+            print(f"Gemini processing error: {e}")
+            # Return a basic structure so the pipeline doesn't crash
+            return {
+                "demographics": {"elderly": 0, "children": 0, "adults": 0, "total": 0},
+                "needs": [],
+                "urgencyScore": 5,
+                "peopleAffected": 0,
+                "location": "Unknown",
+                "summary": "Error processing report content.",
+                "skillsNeeded": [],
+                "confidence": 0.0
+            }
+
 
     async def process_image_report(self, image_bytes: bytes, activity_type: str) -> dict:
         """

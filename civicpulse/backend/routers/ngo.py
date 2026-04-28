@@ -17,10 +17,14 @@ async def register_ngo(ngo: NGOCreate):
         ngo_dict['activities'] = []
         ngo_dict['certificateUrl'] = ""
         ngo_dict['logoUrl'] = ""
+        # Mock location for demo purposes (Mumbai)
+        ngo_dict['location'] = {"lat": 19.0760, "lng": 72.8777}
+
         
         # We store NGO and map user UID
-        ngo_id = await firestore.create_ngo(ngo_dict)
+        ngo_id = await firestore.create_ngo(ngo_dict, ngo_id=user.uid)
         return {"id": ngo_id, "message": "Registered successfully"}
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -51,11 +55,23 @@ async def add_volunteer(ngo_id: str, data: dict, user=Depends(verify_firebase_to
     volunteer_name = data.get('name')
     recipient_email = data.get('personal_email')
     ngo_data = await firestore.get_ngo(ngo_id)
-    
+    if not ngo_data:
+        # If NGO doesn't exist in Firestore, let's create a stub so the operation can continue
+        # This fixes issues for users who registered before the ID linking fix
+        ngo_data = {
+            "id": ngo_id,
+            "name": user.get('email', 'Your NGO').split('@')[0],
+            "email": user.get('email', ''),
+            "verified": False
+        }
+        await firestore.create_ngo(ngo_data, ngo_id=ngo_id)
+
     volunteer_email = email.generate_volunteer_email(volunteer_name, ngo_id)
-    temp_password = "Temp" + volunteer_name[:4] + "123!"
+
+    temp_password = data.get('password') or ("Temp" + volunteer_name[:4].replace(" ", "") + "123!")
     
     try:
+
         new_user = auth.create_user(email=volunteer_email, password=temp_password)
         data['userId'] = new_user.uid
         data['ngoId'] = ngo_id
@@ -72,9 +88,21 @@ async def add_volunteer(ngo_id: str, data: dict, user=Depends(verify_firebase_to
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.put("/{ngo_id}/volunteers/{user_id}")
+async def update_volunteer(ngo_id: str, user_id: str, data: dict, user=Depends(verify_firebase_token)):
+    await firestore.update_volunteer(user_id, data)
+    return {"message": "Volunteer updated"}
+
 @router.delete("/{ngo_id}/volunteers/{user_id}")
+
 async def remove_volunteer(ngo_id: str, user_id: str, user=Depends(verify_firebase_token)):
-    auth.delete_user(user_id)
-    # also remove from firestore logically
-    await firestore.update_volunteer_fatigue(user_id, -1) # mark inactive etc
-    return {"message": "Volunteer removed"}
+    try:
+        try:
+            auth.delete_user(user_id)
+        except:
+            pass
+        await firestore.delete_volunteer(user_id)
+        return {"message": "Volunteer removed"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+

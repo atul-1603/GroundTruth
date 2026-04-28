@@ -49,11 +49,24 @@ async def send_volunteer_credentials(
     msg.attach(part)
 
     try:
-        server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+        host = settings.SMTP_HOST
+        port = settings.SMTP_PORT
+        user = settings.SMTP_USER
+        password = settings.SMTP_PASSWORD
+
+        # Auto-detect SendGrid if using their API key (starts with SG.)
+        if password.startswith("SG."):
+            host = "smtp.sendgrid.net"
+            user = "apikey"
+            port = 587
+
+
+        server = smtplib.SMTP(host, port)
         server.starttls()
-        server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+        server.login(user, password)
         server.sendmail(settings.EMAIL_FROM, recipient_personal_email, msg.as_string())
         server.quit()
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"Failed to send email via {settings.SMTP_HOST}: {e}")
+
         # Not throwing error here to avoid blocking volunteer creation if SMTP is broken locally

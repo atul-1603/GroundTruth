@@ -1,0 +1,38 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Firebase Service Account (CRITICAL)
+serviceAccountKey.json
+*.json
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+build/
+dist/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker logs
+logs/
+*.log

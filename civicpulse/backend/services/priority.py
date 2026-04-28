@@ -14,6 +14,9 @@ def calculate_priority_score(
     """
     normalized_people = min(people_affected / 50, 1.0) * 10
     time_factor = min(hours_since_reported / 72, 1.0) * 10
-    raw = (urgency_score * 0.4) + (normalized_people * 0.3) + (time_factor * 0.3)
+    
+    # Weights: 60% Urgency, 20% People Affected, 20% Time factor
+    raw = (urgency_score * 0.6) + (normalized_people * 0.2) + (time_factor * 0.2)
     final = raw * trust_weight
     return round(min(final, 10.0), 2)
+
